@@ -1,0 +1,66 @@
+version: "3.9"
+   
+services:
+
+  web:
+    container_name: call_centre_admin_v2
+    build: .
+    command: python3 manage.py runserver 0.0.0.0:9001
+    restart:
+      always
+    volumes:
+      - .:/code
+      - "/etc/localtime:/etc/localtime:ro"
+    ports:
+      - "9001:9001"
+#    environment:
+#      - "TZ=$TZ"
+#      - "email=$email"
+    depends_on:
+      - redis
+  redis:
+    container_name: redis_call_centre_admin_v2
+    image: "redis"
+    ports:
+      - "6379:6379"
+    restart:
+            always
+  celery:
+    container_name: celery_call_centre_admin_v2
+    build: .
+    command: celery -A call_centre_admin_v2 worker -l info
+    restart:
+            always
+    volumes:
+      - .:/code
+    depends_on:
+      - flower
+  celery-beat:
+    container_name: celery_beat_call_centre_admin_v2
+    build: .
+    command: celery -A call_centre_admin_v2 beat -l info
+    restart:
+            always
+    volumes:
+      - .:/code
+    depends_on:
+      - celery
+  flower:
+    container_name: flower_call_centre_admin_v2
+    image: mher/flower:0.9.5
+    command: [ 'flower', '--broker=redis://redis:6379', '--port=9002' ]
+    restart:
+            always
+    ports:
+      - "9002:9002"
+    depends_on:
+      - redis
+
+
+networks:
+  default:
+    # указывается драйвер сети
+    external:
+      name: test_net123
+
+
